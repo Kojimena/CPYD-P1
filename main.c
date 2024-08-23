@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <SDL.h>
 
-int main(void) {
+int main(int argc, char *argv[]) {
     SDL_Init(SDL_INIT_EVERYTHING);
-    SQL_Quit();
+    SDL_Quit();
     return 0;
 }
