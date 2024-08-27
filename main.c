@@ -6,26 +6,53 @@
 #define SCREEN_HEIGHT 640
 #define FPS 60
 
-#define N 5
+#define N 12
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
+
 
 Figura figuras[N];
 
-// inicializar figuras
+// Verificar si dos figuras se superponen
+int isOverlapping(Figura* a, Figura* b) {
+    return (a->x < b->x + b->width && a->x + a->width > b->x &&
+            a->y < b->y + b->height && a->y + a->height > b->y);
+}
+
+// Inicializar figuras asegurando que no estén superpuestas
 void initFiguras(SDL_Renderer *renderer) {
     for (int i = 0; i < N; i++) {
-        int x = rand() % (SCREEN_WIDTH - 50);  // [0, SCREEN_WIDTH - 50]
-        int y = rand() % (SCREEN_HEIGHT - 50);  // [0, SCREEN_HEIGHT - 50]
-
-        int spd_x = rand() % 10 - 5;  // [-5, 5]
-        int spd_y = rand() % 10 - 5;  // [-5, 5]
-
-        char* image = "assets/dvd_logo.png";
-
+        int x, y, spd_x, spd_y;
         SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
+        char* image = "assets/dvd_logo.png";
+        Figura nuevaFigura;
 
-        figuras[i] = createFigura(x, y, 64, 38, spd_x, spd_y, image, renderer, color);
+        int overlapping;
+        do {
+            // Generar posición y velocidad aleatoria
+            x = rand() % (SCREEN_WIDTH - 64);  // [0, SCREEN_WIDTH - figura_width]
+            y = rand() % (SCREEN_HEIGHT - 38);  // [0, SCREEN_HEIGHT - figura_height]
+            spd_x = rand() % 10 - 5;  // [-5, 5]
+            spd_y = rand() % 10 - 5;  // [-5, 5]
+
+            // Crear la nueva figura temporalmente
+            nuevaFigura = createFigura(x, y, 64, 38, spd_x, spd_y, image, renderer, color);
+
+            // Verificar si se superpone con alguna figura existente
+            overlapping = 0;
+            for (int j = 0; j < i; j++) {
+                if (isOverlapping(&nuevaFigura, &figuras[j])) {
+                    overlapping = 1;
+                    break;
+                }
+            }
+        } while (overlapping);  // Repetir hasta que no haya superposición
+
+        // Guardar la figura generada sin superposición
+        figuras[i] = nuevaFigura;
     }
 }
+
 
 
 
@@ -53,6 +80,28 @@ void cleanup(SDL_Window* window) {
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
+
+void resolveCollision(Figura* a, Figura* b) {
+    // Invertir velocidades
+    a->speedX *= -1;
+    b->speedX *= -1;
+    a->speedY *= -1;
+    b->speedY *= -1;
+
+    int overlapX = min(a->x + a->width, b->x + b->width) - max(a->x, b->x);
+    int overlapY = min(a->y + a->height, b->y + b->height) - max(a->y, b->y);
+
+    if (overlapX < overlapY) {
+        int shift = overlapX / 2 + 3;
+        a->x += a->speedX > 0 ? shift : -shift;
+        b->x += b->speedX > 0 ? -shift : shift;
+    } else {
+        int shift = overlapY / 2 + 3;
+        a->y += a->speedY > 0 ? shift : -shift;
+        b->y += b->speedY > 0 ? -shift : shift;
+    }
+}
+
 
 int main(int argc, char *argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -110,10 +159,7 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < N; i++) {
             for (int j = i + 1; j < N; j++) {
                 if (checkCollision(&figuras[i], &figuras[j])) {
-                    figuras[i].speedX *= -1;
-                    figuras[j].speedX *= -1;
-                    figuras[i].speedY *= -1;
-                    figuras[j].speedY *= -1;
+                    resolveCollision(&figuras[i], &figuras[j]);
                 }
             }
         }

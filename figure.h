@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include <SDL_image.h>
+#include <math.h>
 
 #define SCREEN_WIDTH 980
 #define SCREEN_HEIGHT 640
@@ -57,6 +58,11 @@ void moveFigura(Figura* figura) {
     figura->x += figura->speedX;
     figura->y += figura->speedY;
 
+    // Agregar una carga computacional simulada ( calcular la raíz cuadrada repetidamente)
+    //for (int i = 0; i < 100000; i++) {
+    //    sqrt(i);  // Simular un cálculo intensivo
+    //}
+
     // Cambiar dirección si toca los bordes de la pantalla
     if (figura->x <= 0 || figura->x >= (SCREEN_WIDTH - figura->width)) {
         figura->speedX *= -1;
@@ -73,12 +79,13 @@ void drawFigura(SDL_Renderer* renderer, Figura* figura) {
     SDL_RenderCopy(renderer, figura->texture, NULL, &rect);
 }
 
-// Función para detectar colisión entre dos figuras
+// Función para detectar colisión entre dos figuras y el eje de colisión
 int checkCollision(Figura* a, Figura* b) {
     int collisionX = a->x < b->x + b->width && a->x + a->width > b->x;
     int collisionY = a->y < b->y + b->height && a->y + a->height > b->y;
     return collisionX && collisionY;
 }
+
 
 
 
