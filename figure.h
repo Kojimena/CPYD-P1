@@ -46,7 +46,11 @@ void drawFigura(SDL_Surface* surface, Figura* figura) {
 }
 
 // Función para detectar colisión entre dos figuras
+// Función para detectar colisión entre dos figuras y manejar la respuesta
+// Función para detectar colisión entre dos figuras
 int checkCollision(Figura* a, Figura* b) {
-    return (a->x < b->x + b->width && a->x + a->width > b->x &&
-            a->y < b->y + b->height && a->y + a->height > b->y);
+    int collisionX = a->x < b->x + b->width && a->x + a->width > b->x;
+    int collisionY = a->y < b->y + b->height && a->y + a->height > b->y;
+    return collisionX && collisionY;
 }
+

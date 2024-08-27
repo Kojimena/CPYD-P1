@@ -8,6 +8,41 @@
 #define SCREEN_HEIGHT 480
 #define FPS 60
 
+#define N 2
+
+Figura figuras[N];
+
+// inicializar figuras
+void initFiguras(SDL_Surface *screenSurface) {
+    for (int i = 0; i < N; i++) {
+        // elegir un color aleatorio
+        int c = rand() % 3;
+
+        int x = rand() % (SCREEN_WIDTH - 50);  // [0, SCREEN_WIDTH - 50]
+        int y = rand() % (SCREEN_HEIGHT - 50);  // [0, SCREEN_HEIGHT - 50]
+
+        int spd_x = rand() % 10 - 5;  // [-5, 5]
+        int spd_y = rand() % 10 - 5;  // [-5, 5]
+
+        switch (c) {
+            case 0:
+                figuras[i] = createFigura(x, y, 50, 50, spd_x, spd_y, RED(screenSurface));
+                break;
+            case 1:
+                figuras[i] = createFigura(x, y, 50, 50, spd_x, spd_y, BLUE(screenSurface));
+                break;
+            case 2:
+                figuras[i] = createFigura(x, y, 50, 50, spd_x, spd_y, GREEN(screenSurface));
+                break;
+
+            default:
+                figuras[i] = createFigura(x, y, 50, 50, spd_x, spd_y, RED(screenSurface));
+                break;
+
+        }
+    }
+}
+
 // Función para inicializar SDL y crear una ventana
 SDL_Window* initializeWindow(const char* title, int width, int height) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -38,13 +73,8 @@ int main(int argc, char *argv[]) {
 
     SDL_Surface* screenSurface = SDL_GetWindowSurface(window);
 
-    // Inicializar colores
-    Uint32 redColor = RED(screenSurface);
-    Uint32 blueColor = BLUE(screenSurface);
-
-    // Crear figuras
-    Figura figura1 = createFigura(0, (SCREEN_HEIGHT - 50) / 2, 50, 50, 5, 0, redColor);
-    Figura figura2 = createFigura(SCREEN_WIDTH - 50, (SCREEN_HEIGHT - 50) / 2, 50, 50, -5, 0, blueColor);
+    // Inicializar figuras
+    initFiguras(screenSurface);
 
     int running = 1;
     while (running) {
@@ -56,21 +86,30 @@ int main(int argc, char *argv[]) {
         }
 
         // Mover figuras
-        moveFigura(&figura1);
-        moveFigura(&figura2);
+        for (int i = 0; i < N; i++) {
+            moveFigura(&figuras[i]);
+        }
 
         // Detectar colisiones entre las figuras
-        if (checkCollision(&figura1, &figura2)) {
-            figura1.speedX *= -1;
-            figura2.speedX *= -1;
+        for (int i = 0; i < N; i++) {
+            for (int j = i + 1; j < N; j++) {
+                if (checkCollision(&figuras[i], &figuras[j])) {
+                    figuras[i].speedX *= -1;
+                    figuras[j].speedX *= -1;
+                    figuras[i].speedY *= -1;
+                    figuras[j].speedY *= -1;
+                }
+            }
         }
 
         // Borrar la pantalla
         SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0x00, 0x00, 0x00));
 
         // Dibujar las figuras
-        drawFigura(screenSurface, &figura1);
-        drawFigura(screenSurface, &figura2);
+
+        for (int i = 0; i < N; i++) {
+            drawFigura(screenSurface, &figuras[i]);
+        }
 
         SDL_UpdateWindowSurface(window);
         SDL_Delay(1000 / FPS);
