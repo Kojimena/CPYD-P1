@@ -13,12 +13,12 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-int N = 2;
+int N;
 Figura* figuras;
 
 int E = 0;  // Número de explosiones
 Explosion * explosion;  // Arreglo de figuras de explosiones
-#define EXPLOSION_FRAMES 10
+int EXPLOSION_FRAMES;
 
 // Verificar si dos figuras se superponen
 int isOverlapping(Figura* a, Figura* b) {
@@ -198,6 +198,16 @@ void moveFigura(Figura* figura, SDL_Renderer* renderer) {
 
 
 int main(int argc, char *argv[]) {
+    if (argc > 2) {
+        N = atoi(argv[1]);
+        EXPLOSION_FRAMES = atoi(argv[2]);
+    } else {
+        printf("Usage: %s <N> <E>\n", argv[0]);
+        return 1;
+    }
+
+    printf("Argumentos: N = %d, E = %d\n", N, EXPLOSION_FRAMES);
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return 1;
