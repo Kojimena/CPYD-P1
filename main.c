@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
     // Inicializar figuras
     initFiguras(renderer);
 
-    Uint32 startTicks, endTicks;
+    Uint32 startTicks, endTicks, logTicks;
     float fps = 0.0f;
     char title[100];
 
@@ -340,6 +340,8 @@ int main(int argc, char *argv[]) {
             drawFigura(renderer, &explosion[i]);
         }
 
+        logTicks = SDL_GetTicks();  // Ticks antes del delay
+
         SDL_RenderPresent(renderer);
         SDL_Delay(1000 / FPS);
 
@@ -347,7 +349,7 @@ int main(int argc, char *argv[]) {
         fps = 1000.0f / (endTicks - startTicks);
 
         // Guardar en el log el tiempo que tardó en ejecutarse el ciclo y los FPS
-        fprintf(file, "%d %f\n", endTicks - startTicks, fps);
+        fprintf(file, "%d %d %.2f\n", logTicks-startTicks, endTicks-startTicks, fps);
 
         snprintf(title, sizeof(title), "Screen Saver - FPS: %.2f", fps);
         SDL_SetWindowTitle(window, title);
