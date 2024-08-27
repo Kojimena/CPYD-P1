@@ -16,6 +16,7 @@ include_directories(${SDL2_IMAGE_INCLUDE_DIR})
 
 add_executable(Proyecto_1 main.c
         figure.h
+        explosion.h
 )
 
 target_link_libraries(Proyecto_1 ${SDL2_LIBRARY} ${SDL2MAIN_LIBRARY} ${SDL2_IMAGE_LIBRARY})

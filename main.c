@@ -1,16 +1,24 @@
 #include <stdio.h>
 #include <SDL.h>
 #include <SDL_image.h>
+
 #include "figure.h"
-#define SCREEN_WIDTH 980
-#define SCREEN_HEIGHT 640
-#define FPS 60
+#include "explosion.h"
+
+
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
+#define FPS 120
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
 int N = 2;
 Figura* figuras;
+
+int E = 0;  // Número de explosiones
+Explosion * explosion;  // Arreglo de figuras de explosiones
+#define EXPLOSION_FRAMES 10
 
 // Verificar si dos figuras se superponen
 int isOverlapping(Figura* a, Figura* b) {
@@ -33,8 +41,10 @@ void initFiguras(SDL_Renderer *renderer) {
             // Generar posición y velocidad aleatoria
             x = rand() % (SCREEN_WIDTH - 64);  // [0, SCREEN_WIDTH - figura_width]
             y = rand() % (SCREEN_HEIGHT - 38);  // [0, SCREEN_HEIGHT - figura_height]
-            spd_x = rand() % 10 - 5;  // [-5, 5]
-            spd_y = rand() % 10 - 5;  // [-5, 5]
+
+            // [-2, 2]
+            spd_x = rand() % 5 - 2;  // spd_x = rand() % 5 - 2
+            spd_y = rand() % 5 - 2;  // spd_y = rand() % 5 - 2
 
             // Crear la nueva figura temporalmente
             nuevaFigura = createFigura(x, y, 64, 38, spd_x, spd_y, image, renderer, color);
@@ -91,6 +101,36 @@ void spawnFigura(SDL_Renderer *renderer) {
 
     // Incrementar el contador de figuras
     N++;
+}
+
+// Crea una explosión en la posición (x, y), que previamente era la posición de una figura
+void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
+    int spd_x, spd_y;
+    SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
+    char* image = "assets/explosion.png";
+    Explosion nuevaExplosion;
+
+    // Las explosiones no se mueven
+    spd_x = 0;
+    spd_y = 0;
+
+    nuevaExplosion.figura = createFigura(x, y, 128, 76, spd_x, spd_y, image, renderer, color);
+    nuevaExplosion.frames = EXPLOSION_FRAMES;
+
+    explosion = (Explosion*)realloc(explosion, (E + 1) * sizeof(Explosion));
+    explosion[E] = nuevaExplosion;
+    E++;
+}
+
+void cleanExplosions() {
+    for (int i = 0; i < E; i++) {
+        explosion[i].frames--;
+        if (explosion[i].frames == 0) {
+            explosion[i] = explosion[E - 1];
+            explosion = (Explosion*)realloc(explosion, (E - 1) * sizeof(Explosion));
+            E--;
+        }
+    }
 }
 
 
@@ -206,6 +246,9 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        // Limpiar explosiones
+        cleanExplosions();
+
         SDL_RenderClear(renderer);
 
         // Mover figuras
@@ -229,18 +272,42 @@ int main(int argc, char *argv[]) {
                     }
 
                     if (randNum == 0) {
+                        int prevX = figuras[i].x;
+                        int prevY = figuras[i].y;
+
+                        // Eliminar la figura i
                         figuras[i] = figuras[N - 1];
                         figuras = (Figura*)realloc(figuras, (N - 1) * sizeof(Figura));
                         N--;
+
+                        // Crear una explosión en la posición de la figura eliminada
+                        spawnExplosion(renderer, prevX, prevY);
                     } else if (randNum == 1) {
+                        int prevX = figuras[j].x;
+                        int prevY = figuras[j].y;
+
+                        // Eliminar la figura j
                         figuras[j] = figuras[N - 1];
                         figuras = (Figura*)realloc(figuras, (N - 1) * sizeof(Figura));
                         N--;
+
+                        // Crear una explosión en la posición de la figura eliminada
+                        spawnExplosion(renderer, prevX, prevY);
                     } else {
+                        int prevX1 = figuras[i].x;
+                        int prevY1 = figuras[i].y;
+                        int prevX2 = figuras[j].x;
+                        int prevY2 = figuras[j].y;
+
+                        // Eliminar ambas figuras
                         figuras[i] = figuras[N - 1];
                         figuras[j] = figuras[N - 2];
                         figuras = (Figura*)realloc(figuras, (N - 2) * sizeof(Figura));
                         N -= 2;
+
+                        // Crear una explosión en la posición de la figura eliminada
+                        spawnExplosion(renderer, prevX1, prevY1);
+                        spawnExplosion(renderer, prevX2, prevY2);
                     }
                 }
             }
@@ -249,6 +316,11 @@ int main(int argc, char *argv[]) {
         // Dibujar las figuras
         for (int i = 0; i < N; i++) {
             drawFigura(renderer, &figuras[i]);
+        }
+
+        // Dibujar explosiones
+        for (int i = 0; i < E; i++) {
+            drawFigura(renderer, &explosion[i]);
         }
 
         SDL_RenderPresent(renderer);
