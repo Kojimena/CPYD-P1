@@ -201,6 +201,16 @@ int main(int argc, char *argv[]) {
     if (argc > 2) {
         N = atoi(argv[1]);
         EXPLOSION_FRAMES = atoi(argv[2]);
+
+        if (N <= 0) {
+            printf("N debe ser un número positivo\n");
+            return 1;
+        }
+
+        if (EXPLOSION_FRAMES <= 0) {
+            printf("E debe ser un número positivo\n");
+            return 1;
+        }
     } else {
         printf("Usage: %s <N> <E>\n", argv[0]);
         return 1;
