@@ -6,12 +6,11 @@
 #define SCREEN_HEIGHT 640
 #define FPS 60
 
-#define N 12
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-
-Figura figuras[N];
+int N = 2;
+Figura* figuras;
 
 // Verificar si dos figuras se superponen
 int isOverlapping(Figura* a, Figura* b) {
@@ -21,6 +20,8 @@ int isOverlapping(Figura* a, Figura* b) {
 
 // Inicializar figuras asegurando que no estén superpuestas
 void initFiguras(SDL_Renderer *renderer) {
+    figuras = (Figura*)malloc(N * sizeof(Figura)); // Asignar memoria para N figuras
+
     for (int i = 0; i < N; i++) {
         int x, y, spd_x, spd_y;
         SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
@@ -53,7 +54,44 @@ void initFiguras(SDL_Renderer *renderer) {
     }
 }
 
+// Añadir una figura a la lista de figuras
+void spawnFigura(SDL_Renderer *renderer) {
+    int x, y, spd_x, spd_y;
+    SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
+    char* image = "assets/dvd_logo.png";
+    Figura nuevaFigura;
 
+    int overlapping;
+
+    do {
+        // Generar posición y velocidad aleatoria
+        x = rand() % (SCREEN_WIDTH - 64);  // [0, SCREEN_WIDTH - figura_width]
+        y = rand() % (SCREEN_HEIGHT - 38);  // [0, SCREEN_HEIGHT - figura_height]
+        spd_x = rand() % 10 - 5;  // [-5, 5]
+        spd_y = rand() % 10 - 5;  // [-5, 5]
+
+        // Crear la nueva figura temporalmente
+        nuevaFigura = createFigura(x, y, 64, 38, spd_x, spd_y, image, renderer, color);
+
+        // Verificar si se superpone con alguna figura existente
+        overlapping = 0;
+        for (int j = 0; j < N; j++) {
+            if (isOverlapping(&nuevaFigura, &figuras[j])) {
+                overlapping = 1;
+                break;
+            }
+        }
+    } while (overlapping);  // Repetir hasta que no haya superposición
+
+    // Aumentar el tamaño del arreglo de figuras
+    figuras = (Figura*)realloc(figuras, (N + 1) * sizeof(Figura));
+
+    // Guardar la nueva figura
+    figuras[N] = nuevaFigura;
+
+    // Incrementar el contador de figuras
+    N++;
+}
 
 
 // Función para inicializar SDL y crear una ventana
@@ -102,6 +140,22 @@ void resolveCollision(Figura* a, Figura* b) {
     }
 }
 
+// Función para mover una figura
+void moveFigura(Figura* figura, SDL_Renderer* renderer) {
+    figura->x += figura->speedX;
+    figura->y += figura->speedY;
+
+    // Cambiar dirección si toca los bordes de la pantalla
+    if (figura->x <= 0 || figura->x >= (SCREEN_WIDTH - figura->width)) {
+        figura->speedX *= -1;
+        spawnFigura(renderer);
+    }
+    if (figura->y <= 0 || figura->y >= (SCREEN_HEIGHT - figura->height)) {
+        figura->speedY *= -1;
+        spawnFigura(renderer);
+    }
+}
+
 
 int main(int argc, char *argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -141,6 +195,10 @@ int main(int argc, char *argv[]) {
     while (running) {
         startTicks = SDL_GetTicks();
 
+        if (N == 0) {
+            break;
+        }
+
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -152,7 +210,7 @@ int main(int argc, char *argv[]) {
 
         // Mover figuras
         for (int i = 0; i < N; i++) {
-            moveFigura(&figuras[i]);
+            moveFigura(&figuras[i], renderer);
         }
 
         // Detectar colisiones entre las figuras
@@ -160,6 +218,30 @@ int main(int argc, char *argv[]) {
             for (int j = i + 1; j < N; j++) {
                 if (checkCollision(&figuras[i], &figuras[j])) {
                     resolveCollision(&figuras[i], &figuras[j]);
+
+                    // decidir al azar cual de las dos figuras se elimina
+                    int randNum;
+
+                    if (N <= 2) {
+                        randNum = rand() % 2;
+                    } else {
+                        randNum = rand() % 3;
+                    }
+
+                    if (randNum == 0) {
+                        figuras[i] = figuras[N - 1];
+                        figuras = (Figura*)realloc(figuras, (N - 1) * sizeof(Figura));
+                        N--;
+                    } else if (randNum == 1) {
+                        figuras[j] = figuras[N - 1];
+                        figuras = (Figura*)realloc(figuras, (N - 1) * sizeof(Figura));
+                        N--;
+                    } else {
+                        figuras[i] = figuras[N - 1];
+                        figuras[j] = figuras[N - 2];
+                        figuras = (Figura*)realloc(figuras, (N - 2) * sizeof(Figura));
+                        N -= 2;
+                    }
                 }
             }
         }

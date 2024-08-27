@@ -53,24 +53,6 @@ Figura createFigura(int x, int y, int width, int height, int speedX, int speedY,
     return figura;
 }
 
-// Función para mover una figura
-void moveFigura(Figura* figura) {
-    figura->x += figura->speedX;
-    figura->y += figura->speedY;
-
-    // Agregar una carga computacional simulada ( calcular la raíz cuadrada repetidamente)
-    //for (int i = 0; i < 100000; i++) {
-    //    sqrt(i);  // Simular un cálculo intensivo
-    //}
-
-    // Cambiar dirección si toca los bordes de la pantalla
-    if (figura->x <= 0 || figura->x >= (SCREEN_WIDTH - figura->width)) {
-        figura->speedX *= -1;
-    }
-    if (figura->y <= 0 || figura->y >= (SCREEN_HEIGHT - figura->height)) {
-        figura->speedY *= -1;
-    }
-}
 
 // Función para dibujar una figura en la superficie dada
 void drawFigura(SDL_Renderer* renderer, Figura* figura) {
