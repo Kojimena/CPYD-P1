@@ -206,6 +206,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    FILE *file = fopen("iter.log", "w");
+
+    if (file == NULL) {
+        printf("Error al abrir el archivo\n");
+        return 1;
+    }
+
     printf("Argumentos: N = %d, E = %d\n", N, EXPLOSION_FRAMES);
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -338,6 +345,10 @@ int main(int argc, char *argv[]) {
 
         endTicks = SDL_GetTicks();
         fps = 1000.0f / (endTicks - startTicks);
+
+        // Guardar en el log el tiempo que tardó en ejecutarse el ciclo y los FPS
+        fprintf(file, "%d %f\n", endTicks - startTicks, fps);
+
         snprintf(title, sizeof(title), "Screen Saver - FPS: %.2f", fps);
         SDL_SetWindowTitle(window, title);
     }
