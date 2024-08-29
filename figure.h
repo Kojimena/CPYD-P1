@@ -5,8 +5,8 @@
 #include <SDL_image.h>
 #include <math.h>
 
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 720
+#define SCREEN_WIDTH 2500
+#define SCREEN_HEIGHT 1500
 
 // Función para inicializar una figura
 typedef struct {
