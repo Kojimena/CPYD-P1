@@ -4,6 +4,7 @@ project(Proyecto_1 C)
 set(CMAKE_C_STANDARD 23)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
 
 set(SDL2_PATH "D:/Dev/SDL/SDL2-2.30.6/x86_64-w64-mingw32")
 set(SDL2_IMAGE_PATH "D:/Dev/SDL/SDL_Image/SDL2_image-2.8.2/x86_64-w64-mingw32")

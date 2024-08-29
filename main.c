@@ -5,8 +5,6 @@
 #include "figure.h"
 #include "explosion.h"
 
-#include <omp.h>
-
 #define FPS 120
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -30,12 +28,8 @@ int isOverlapping(Figura* a, Figura* b) {
 
 // Inicializar figuras asegurando que no estén superpuestas
 void initFiguras(SDL_Renderer *renderer) {
-    #pragma omp critical
-    {
-        figuras = (Figura *) malloc(N * sizeof(Figura)); // Asignar memoria para N figuras
-    }
+    figuras = (Figura*)malloc(N * sizeof(Figura)); // Asignar memoria para N figuras
 
-    #pragma omp parallel for schedule(dynamic) shared(figuras, renderer)
     for (int i = 0; i < N; i++) {
         int x, y, spd_x, spd_y;
         SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
@@ -57,22 +51,16 @@ void initFiguras(SDL_Renderer *renderer) {
 
             // Verificar si se superpone con alguna figura existente
             overlapping = 0;
-            #pragma omp parallel for shared(overlapping)
             for (int j = 0; j < i; j++) {
                 if (isOverlapping(&nuevaFigura, &figuras[j])) {
-                    #pragma omp atomic write
                     overlapping = 1;
                     break;
                 }
             }
-
         } while (overlapping);  // Repetir hasta que no haya superposición
 
         // Guardar la figura generada sin superposición
-        # pragma omp critical
-        {
-            figuras[i] = nuevaFigura;
-        };
+        figuras[i] = nuevaFigura;
     }
 }
 
@@ -81,7 +69,7 @@ void spawnFigura(SDL_Renderer *renderer) {
     int x, y, spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
 
-    #pragma omp parallel for private(x, y, spd_x, spd_y) shared(color) schedule(auto)
+    #pragma omp parallel for schedule(dynamic) shared(figuras, color)
     for (int r = 255; r < 256; r += 16) {
         for (int g = 0; g < 256; g += 16) {
             for (int b = 255; b < 256; b += 16) {
@@ -89,17 +77,14 @@ void spawnFigura(SDL_Renderer *renderer) {
                 for (int i = 0; i < N; i++) {
                     if (figuras[i].color.r == r){
                         color.r = rand() % 256;
-                        #pragma omp flush(color)
                     }
 
                     if (figuras[i].color.g == g){
                         color.g = rand() % 256;
-                        #pragma omp flush(color)
                     }
 
                     if (figuras[i].color.b == b){
                         color.b = rand() % 256;
-                        #pragma omp flush(color)
                     }
                 }
 
@@ -135,10 +120,7 @@ void spawnFigura(SDL_Renderer *renderer) {
     } while (overlapping);  // Repetir hasta que no haya superposición
 
     // Aumentar el tamaño del arreglo de figuras
-    #pragma omp critical
-    {
     figuras = (Figura*)realloc(figuras, (N + 1) * sizeof(Figura));
-    }
 
     // Guardar la nueva figura
     figuras[N] = nuevaFigura;
@@ -152,7 +134,7 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     int spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
 
-    #pragma omp parallel for private(x, y, spd_x, spd_y) shared(color) schedule(auto)
+    #pragma omp parallel for schedule(dynamic) shared(explosion, color)
     for (int r = 255; r < 256; r += 16) {
         for (int g = 0; g < 256; g += 16) {
             for (int b = 255; b < 256; b += 16) {
@@ -160,17 +142,14 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
                 for (int i = 0; i < E; i++) {
                     if (explosion[i].figura.color.r == r) {
                         color.r = rand() % 256;
-                        #pragma omp flush(color)
                     }
 
                     if (explosion[i].figura.color.g == g) {
                         color.g = rand() % 256;
-                        #pragma omp flush(color)
                     }
 
                     if (explosion[i].figura.color.b == b) {
                         color.b = rand() % 256;
-                        #pragma omp flush(color)
                     }
                 }
 
@@ -190,29 +169,21 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
 
     nuevaExplosion.figura = createFigura(x, y, FIGURE_WIDTH*4, FIGURE_HEIGHT*4, spd_x, spd_y, image, renderer, color);
     nuevaExplosion.frames = EXPLOSION_FRAMES;
-    #pragma omp critical
-    {
-        explosion = (Explosion *) realloc(explosion, (E + 1) * sizeof(Explosion));
-    }
+
+    explosion = (Explosion*)realloc(explosion, (E + 1) * sizeof(Explosion));
     explosion[E] = nuevaExplosion;
     E++;
 }
 
 void cleanExplosions() {
-    #pragma omp parallel for schedule(dynamic, 4)
     for (int i = 0; i < E; i++) {
         explosion[i].frames--;
         if (explosion[i].frames == 0) {
-            #pragma omp critical
-            {
-                explosion[i] = explosion[E - 1];
-                explosion = (Explosion *) realloc(explosion, (E - 1) * sizeof(Explosion));
-                E--;
-            }
+            explosion[i] = explosion[E - 1];
+            explosion = (Explosion*)realloc(explosion, (E - 1) * sizeof(Explosion));
+            E--;
         } else {
-            #pragma omp atomic
             explosion[i].figura.width -= (FIGURE_WIDTH*4)/EXPLOSION_FRAMES;
-            #pragma omp atomic
             explosion[i].figura.height -= (FIGURE_HEIGHT*4)/EXPLOSION_FRAMES;
         }
 
@@ -247,14 +218,9 @@ void cleanup(SDL_Window* window) {
 
 void resolveCollision(Figura* a, Figura* b) {
     // Invertir velocidades
-
-    #pragma omp atomic
     a->speedX *= -1;
-    #pragma omp atomic
     b->speedX *= -1;
-    #pragma omp atomic
     a->speedY *= -1;
-    #pragma omp atomic
     b->speedY *= -1;
 
     int overlapX = min(a->x + a->width, b->x + b->width) - max(a->x, b->x);
@@ -345,8 +311,6 @@ int main(int argc, char *argv[]) {
     // Inicializar figuras
     initFiguras(renderer);
 
-    #pragma omp barrier
-
     Uint32 startTicks, endTicks, logTicks;
     float fps = 0.0f;
     char title[100];
@@ -377,7 +341,6 @@ int main(int argc, char *argv[]) {
         }
 
         // Detectar colisiones entre las figuras
-        #pragma omp parallel for shared(figuras) schedule(dynamic, 4)
         for (int i = 0; i < N; i++) {
             for (int j = i + 1; j < N; j++) {
                 if (checkCollision(&figuras[i], &figuras[j])) {
@@ -405,10 +368,7 @@ int main(int argc, char *argv[]) {
 
                         // Eliminar la figura i
                         figuras[i] = figuras[N - 1];
-                        #pragma omp critical
-                        {
-                            figuras = (Figura *) realloc(figuras, (N - 1) * sizeof(Figura));
-                        }
+                        figuras = (Figura*)realloc(figuras, (N - 1) * sizeof(Figura));
                         N--;
 
                         // Crear una explosión en la posición de la figura eliminada
@@ -426,10 +386,7 @@ int main(int argc, char *argv[]) {
 
                         // Eliminar la figura j
                         figuras[j] = figuras[N - 1];
-                        #pragma omp critical
-                        {
-                            figuras = (Figura *) realloc(figuras, (N - 1) * sizeof(Figura));
-                        }
+                        figuras = (Figura*)realloc(figuras, (N - 1) * sizeof(Figura));
                         N--;
 
                         // Crear una explosión en la posición de la figura eliminada
@@ -453,10 +410,7 @@ int main(int argc, char *argv[]) {
                         // Eliminar ambas figuras
                         figuras[i] = figuras[N - 1];
                         figuras[j] = figuras[N - 2];
-                        #pragma omp critical
-                        {
-                            figuras = (Figura *) realloc(figuras, (N - 2) * sizeof(Figura));
-                        }
+                        figuras = (Figura*)realloc(figuras, (N - 2) * sizeof(Figura));
                         N -= 2;
 
                         // Crear una explosión en la posición de la figura eliminada
@@ -466,8 +420,6 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-
-        #pragma omp barrier
 
         // Dibujar las figuras
         for (int i = 0; i < N; i++) {
@@ -498,4 +450,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
