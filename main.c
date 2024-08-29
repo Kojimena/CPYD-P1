@@ -5,6 +5,8 @@
 #include "figure.h"
 #include "explosion.h"
 
+#include "omp.h"
+
 #define FPS 120
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -29,40 +31,55 @@ int isOverlapping(Figura* a, Figura* b) {
 // Inicializar figuras asegurando que no estén superpuestas
 void initFiguras(SDL_Renderer *renderer) {
     figuras = (Figura*)malloc(N * sizeof(Figura)); // Asignar memoria para N figuras
+    omp_lock_t lock;
+    omp_init_lock(&lock);
+    #pragma omp parallel
+    {
+        #pragma omp for schedule(dynamic)
+        for (int i = 0; i < N; i++) {
+            int x, y, spd_x, spd_y;
+            omp_set_lock(&lock);
+            SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
+            omp_unset_lock(&lock);
 
-    for (int i = 0; i < N; i++) {
-        int x, y, spd_x, spd_y;
-        SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
-        char* image = "assets/dvd_logo.png";
-        Figura nuevaFigura;
+            char *image = "assets/dvd_logo.png";
+            Figura nuevaFigura;
 
-        int overlapping;
-        do {
-            // Generar posición y velocidad aleatoria
-            x = rand() % (SCREEN_WIDTH - 64);  // [0, SCREEN_WIDTH - figura_width]
-            y = rand() % (SCREEN_HEIGHT - 38);  // [0, SCREEN_HEIGHT - figura_height]
+            int overlapping;
+            do {
+                omp_set_lock(&lock);
 
-            // [-2, 2]
-            spd_x = rand() % 5 - 2;  // spd_x = rand() % 5 - 2
-            spd_y = rand() % 5 - 2;  // spd_y = rand() % 5 - 2
+                // Generar posición y velocidad aleatoria
+                x = rand() % (SCREEN_WIDTH - 64);  // [0, SCREEN_WIDTH - figura_width]
+                y = rand() % (SCREEN_HEIGHT - 38);  // [0, SCREEN_HEIGHT - figura_height]
 
-            // Crear la nueva figura temporalmente
-            nuevaFigura = createFigura(x, y, FIGURE_WIDTH, FIGURE_HEIGHT, spd_x, spd_y, image, renderer, color);
+                // [-2, 2]
+                spd_x = rand() % 5 - 2;  // spd_x = rand() % 5 - 2
+                spd_y = rand() % 5 - 2;  // spd_y = rand() % 5 - 2
 
-            // Verificar si se superpone con alguna figura existente
-            overlapping = 0;
-            for (int j = 0; j < i; j++) {
-                if (isOverlapping(&nuevaFigura, &figuras[j])) {
-                    overlapping = 1;
-                    break;
+                // Crear la nueva figura temporalmente
+                nuevaFigura = createFigura(x, y, FIGURE_WIDTH, FIGURE_HEIGHT, spd_x, spd_y, image, renderer, color);
+
+                // Verificar si se superpone con alguna figura existente
+                overlapping = 0;
+                omp_unset_lock(&lock);
+                #pragma omp critical
+                {
+                    for (int j = 0; j < i; j++) {
+                        if (isOverlapping(&nuevaFigura, &figuras[j])) {
+                            overlapping = 1;
+                            break;
+                        }
+                    }
                 }
-            }
-        } while (overlapping);  // Repetir hasta que no haya superposición
+            } while (overlapping);  // Repetir hasta que no haya superposición
 
-        // Guardar la figura generada sin superposición
-        figuras[i] = nuevaFigura;
+            // Guardar la figura generada sin superposición
+            figuras[i] = nuevaFigura;
+        }
     }
 }
+
 
 // Añadir una figura a la lista de figuras
 void spawnFigura(SDL_Renderer *renderer) {
@@ -310,6 +327,7 @@ int main(int argc, char *argv[]) {
 
     // Inicializar figuras
     initFiguras(renderer);
+#pragma omp b
 
     Uint32 startTicks, endTicks, logTicks;
     float fps = 0.0f;
