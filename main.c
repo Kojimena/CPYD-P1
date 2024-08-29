@@ -355,6 +355,13 @@ int main(int argc, char *argv[]) {
                     }
 
                     if (randNum == 0) {
+
+                        int salvation = rand() % 3;  // 0, 1, 2
+
+                        if (salvation > 1) {
+                            continue;
+                        }
+
                         int prevX = figuras[i].x;
                         int prevY = figuras[i].y;
 
@@ -366,6 +373,13 @@ int main(int argc, char *argv[]) {
                         // Crear una explosión en la posición de la figura eliminada
                         spawnExplosion(renderer, prevX, prevY);
                     } else if (randNum == 1) {
+
+                        int salvation = rand() % 3;  // 0, 1, 2
+
+                        if (salvation > 1) {
+                            continue;
+                        }
+
                         int prevX = figuras[j].x;
                         int prevY = figuras[j].y;
 
@@ -379,7 +393,13 @@ int main(int argc, char *argv[]) {
                     } else if (randNum == 2) {
                         continue;  // Ambas se salvan
                     } else if (randNum == 3) {
-                        spawnFigura(renderer);  // Añadir una nueva figura
+
+                        int children = rand() % 5;  // 0, 1, 2, 3, 4
+
+                        for (int k = 0; k < children; k++) {
+                            spawnFigura(renderer);
+                        }
+
                     } else {
                         int prevX1 = figuras[i].x;
                         int prevY1 = figuras[i].y;
