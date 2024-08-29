@@ -86,6 +86,9 @@ void spawnFigura(SDL_Renderer *renderer) {
     int x, y, spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
 
+    omp_lock_t lock;
+    omp_init_lock(&lock);
+
     #pragma omp parallel for schedule(dynamic) shared(figuras, color)
     for (int r = 255; r < 256; r += 16) {
         for (int g = 0; g < 256; g += 16) {
@@ -93,15 +96,22 @@ void spawnFigura(SDL_Renderer *renderer) {
 
                 for (int i = 0; i < N; i++) {
                     if (figuras[i].color.r == r){
+                        omp_set_lock(&lock);
                         color.r = rand() % 256;
+                        omp_unset_lock(&lock);
+
                     }
 
                     if (figuras[i].color.g == g){
+                        omp_set_lock(&lock);
                         color.g = rand() % 256;
+                        omp_unset_lock(&lock);
                     }
 
                     if (figuras[i].color.b == b){
+                        omp_set_lock(&lock);
                         color.b = rand() % 256;
+                        omp_unset_lock(&lock);
                     }
                 }
 
@@ -151,6 +161,9 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     int spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
 
+    omp_lock_t lock;
+    omp_init_lock(&lock);
+
     #pragma omp parallel for schedule(dynamic) shared(explosion, color)
     for (int r = 255; r < 256; r += 16) {
         for (int g = 0; g < 256; g += 16) {
@@ -158,15 +171,21 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
 
                 for (int i = 0; i < E; i++) {
                     if (explosion[i].figura.color.r == r) {
+                        omp_set_lock(&lock);
                         color.r = rand() % 256;
+                        omp_unset_lock(&lock);
                     }
 
                     if (explosion[i].figura.color.g == g) {
+                        omp_set_lock(&lock);
                         color.g = rand() % 256;
+                        omp_unset_lock(&lock);
                     }
 
                     if (explosion[i].figura.color.b == b) {
+                        omp_set_lock(&lock);
                         color.b = rand() % 256;
+                        omp_unset_lock(&lock);
                     }
                 }
 
@@ -193,19 +212,29 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
 }
 
 void cleanExplosions() {
-    for (int i = 0; i < E; i++) {
+    int i;
+
+    #pragma omp parallel for
+    for (i = 0; i < E; i++) {
         explosion[i].frames--;
+        if (explosion[i].frames > 0) {
+            explosion[i].figura.width -= (FIGURE_WIDTH*4)/EXPLOSION_FRAMES;
+            explosion[i].figura.height -= (FIGURE_HEIGHT*4)/EXPLOSION_FRAMES;
+        }
+    }
+
+    #pragma omp barrier
+
+    for (i = 0; i < E; i++) {
         if (explosion[i].frames == 0) {
             explosion[i] = explosion[E - 1];
             explosion = (Explosion*)realloc(explosion, (E - 1) * sizeof(Explosion));
             E--;
-        } else {
-            explosion[i].figura.width -= (FIGURE_WIDTH*4)/EXPLOSION_FRAMES;
-            explosion[i].figura.height -= (FIGURE_HEIGHT*4)/EXPLOSION_FRAMES;
+            i--;
         }
-
     }
 }
+
 
 
 // Función para inicializar SDL y crear una ventana
