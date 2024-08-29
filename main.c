@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
 
     // Inicializar figuras
     initFiguras(renderer);
-#pragma omp b
+    #pragma omp barrier
 
     Uint32 startTicks, endTicks, logTicks;
     float fps = 0.0f;
