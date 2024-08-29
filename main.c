@@ -5,13 +5,13 @@
 #include "figure.h"
 #include "explosion.h"
 
-
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 720
 #define FPS 120
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
+
+#define FIGURE_WIDTH 32
+#define FIGURE_HEIGHT 19
 
 int N;
 Figura* figuras;
@@ -47,7 +47,7 @@ void initFiguras(SDL_Renderer *renderer) {
             spd_y = rand() % 5 - 2;  // spd_y = rand() % 5 - 2
 
             // Crear la nueva figura temporalmente
-            nuevaFigura = createFigura(x, y, 64, 38, spd_x, spd_y, image, renderer, color);
+            nuevaFigura = createFigura(x, y, FIGURE_WIDTH, FIGURE_HEIGHT, spd_x, spd_y, image, renderer, color);
 
             // Verificar si se superpone con alguna figura existente
             overlapping = 0;
@@ -68,6 +68,32 @@ void initFiguras(SDL_Renderer *renderer) {
 void spawnFigura(SDL_Renderer *renderer) {
     int x, y, spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
+
+
+    for (int r = 255; r < 256; r += 16) {
+        for (int g = 0; g < 256; g += 16) {
+            for (int b = 255; b < 256; b += 16) {
+
+                for (int i = 0; i < N; i++) {
+                    if (figuras[i].color.r == r){
+                        color.r = rand() % 256;
+                    }
+
+                    if (figuras[i].color.g == g){
+                        color.g = rand() % 256;
+                    }
+
+                    if (figuras[i].color.b == b){
+                        color.b = rand() % 256;
+                    }
+                }
+
+            }
+
+        }
+
+    }
+
     char* image = "assets/dvd_logo.png";
     Figura nuevaFigura;
 
@@ -81,7 +107,7 @@ void spawnFigura(SDL_Renderer *renderer) {
         spd_y = rand() % 10 - 5;  // [-5, 5]
 
         // Crear la nueva figura temporalmente
-        nuevaFigura = createFigura(x, y, 64, 38, spd_x, spd_y, image, renderer, color);
+        nuevaFigura = createFigura(x, y, FIGURE_WIDTH, FIGURE_HEIGHT, spd_x, spd_y, image, renderer, color);
 
         // Verificar si se superpone con alguna figura existente
         overlapping = 0;
@@ -107,6 +133,32 @@ void spawnFigura(SDL_Renderer *renderer) {
 void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     int spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
+
+    for (int r = 255; r < 256; r += 16) {
+        for (int g = 0; g < 256; g += 16) {
+            for (int b = 255; b < 256; b += 16) {
+
+                for (int i = 0; i < E; i++) {
+                    if (explosion[i].figura.color.r == r) {
+                        color.r = rand() % 256;
+                    }
+
+                    if (explosion[i].figura.color.g == g) {
+                        color.g = rand() % 256;
+                    }
+
+                    if (explosion[i].figura.color.b == b) {
+                        color.b = rand() % 256;
+                    }
+                }
+
+            }
+
+        }
+
+    }
+
+
     char* image = "assets/explosion.png";
     Explosion nuevaExplosion;
 
@@ -114,7 +166,7 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     spd_x = 0;
     spd_y = 0;
 
-    nuevaExplosion.figura = createFigura(x, y, 128, 76, spd_x, spd_y, image, renderer, color);
+    nuevaExplosion.figura = createFigura(x, y, FIGURE_WIDTH*4, FIGURE_HEIGHT*4, spd_x, spd_y, image, renderer, color);
     nuevaExplosion.frames = EXPLOSION_FRAMES;
 
     explosion = (Explosion*)realloc(explosion, (E + 1) * sizeof(Explosion));
@@ -129,7 +181,11 @@ void cleanExplosions() {
             explosion[i] = explosion[E - 1];
             explosion = (Explosion*)realloc(explosion, (E - 1) * sizeof(Explosion));
             E--;
+        } else {
+            explosion[i].figura.width -= (FIGURE_WIDTH*4)/EXPLOSION_FRAMES;
+            explosion[i].figura.height -= (FIGURE_HEIGHT*4)/EXPLOSION_FRAMES;
         }
+
     }
 }
 
@@ -293,12 +349,19 @@ int main(int argc, char *argv[]) {
                     int randNum;
 
                     if (N <= 2) {
-                        randNum = rand() % 2;
+                        randNum = rand() % 4;  // 0, 1, 2, 3
                     } else {
-                        randNum = rand() % 3;
+                        randNum = rand() % 5;  // 0, 1, 2, 3, 4
                     }
 
                     if (randNum == 0) {
+
+                        int salvation = rand() % 3;  // 0, 1, 2
+
+                        if (salvation > 1) {
+                            continue;
+                        }
+
                         int prevX = figuras[i].x;
                         int prevY = figuras[i].y;
 
@@ -310,6 +373,13 @@ int main(int argc, char *argv[]) {
                         // Crear una explosión en la posición de la figura eliminada
                         spawnExplosion(renderer, prevX, prevY);
                     } else if (randNum == 1) {
+
+                        int salvation = rand() % 3;  // 0, 1, 2
+
+                        if (salvation > 1) {
+                            continue;
+                        }
+
                         int prevX = figuras[j].x;
                         int prevY = figuras[j].y;
 
@@ -320,6 +390,16 @@ int main(int argc, char *argv[]) {
 
                         // Crear una explosión en la posición de la figura eliminada
                         spawnExplosion(renderer, prevX, prevY);
+                    } else if (randNum == 2) {
+                        continue;  // Ambas se salvan
+                    } else if (randNum == 3) {
+
+                        int children = rand() % 5;  // 0, 1, 2, 3, 4
+
+                        for (int k = 0; k < children; k++) {
+                            spawnFigura(renderer);
+                        }
+
                     } else {
                         int prevX1 = figuras[i].x;
                         int prevY1 = figuras[i].y;
@@ -359,7 +439,7 @@ int main(int argc, char *argv[]) {
         fps = 1000.0f / (endTicks - startTicks);
 
         // Guardar en el log el tiempo que tardó en ejecutarse el ciclo y los FPS
-        fprintf(file, "%d %d %.2f\n", logTicks-startTicks, endTicks-startTicks, fps);
+        fprintf(file, "%d %d %.2f %d\n", logTicks-startTicks, endTicks-startTicks, fps, N);
 
         snprintf(title, sizeof(title), "Screen Saver - FPS: %.2f", fps);
         SDL_SetWindowTitle(window, title);
