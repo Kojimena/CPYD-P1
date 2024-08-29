@@ -212,29 +212,36 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
 }
 
 void cleanExplosions() {
-    int i;
+    #pragma omp parallel shared(explosion, E, EXPLOSION_FRAMES) default(none)
+    {
+        #pragma omp for schedule(dynamic)
+        for (int i = 0; i < E; i++) {
+            #pragma omp atomic
+            explosion[i].frames--;
 
-    #pragma omp parallel for
-    for (i = 0; i < E; i++) {
-        explosion[i].frames--;
-        if (explosion[i].frames > 0) {
-            explosion[i].figura.width -= (FIGURE_WIDTH*4)/EXPLOSION_FRAMES;
-            explosion[i].figura.height -= (FIGURE_HEIGHT*4)/EXPLOSION_FRAMES;
+            if (explosion[i].frames > 0) {
+                explosion[i].figura.width -= (FIGURE_WIDTH * 4) / EXPLOSION_FRAMES;
+                explosion[i].figura.height -= (FIGURE_HEIGHT * 4) / EXPLOSION_FRAMES;
+            }
         }
-    }
 
-    #pragma omp barrier
-
-    for (i = 0; i < E; i++) {
-        if (explosion[i].frames == 0) {
-            explosion[i] = explosion[E - 1];
-            explosion = (Explosion*)realloc(explosion, (E - 1) * sizeof(Explosion));
-            E--;
-            i--;
+        #pragma omp single
+        {
+            for (int i = 0; i < E;) {
+                if (explosion[i].frames == 0) {
+                    #pragma omp critical
+                    {
+                        explosion[i] = explosion[E - 1];
+                        explosion = (Explosion*)realloc(explosion, (E - 1) * sizeof(Explosion));
+                        E--;
+                    }
+                } else {
+                    i++; // Sólo avanzar el índice si no hemos eliminado un elemento.
+                }
+            }
         }
     }
 }
-
 
 
 // Función para inicializar SDL y crear una ventana
@@ -283,19 +290,33 @@ void resolveCollision(Figura* a, Figura* b) {
     }
 }
 
-// Función para mover una figura
-void moveFigura(Figura* figura, SDL_Renderer* renderer) {
-    figura->x += figura->speedX;
-    figura->y += figura->speedY;
+void updateFiguras(Figura* figuras, int N, SDL_Renderer* renderer) {
+    #pragma omp parallel for
+    for (int i = 0; i < N; i++) {
+        Figura* figura = &figuras[i];
 
-    // Cambiar dirección si toca los bordes de la pantalla
-    if (figura->x <= 0 || figura->x >= (SCREEN_WIDTH - figura->width)) {
-        figura->speedX *= -1;
-        spawnFigura(renderer);
-    }
-    if (figura->y <= 0 || figura->y >= (SCREEN_HEIGHT - figura->height)) {
-        figura->speedY *= -1;
-        spawnFigura(renderer);
+        figura->x += figura->speedX;
+        figura->y += figura->speedY;
+
+        // Cambiar dirección si toca los bordes de la pantalla
+        if (figura->x <= 0 || figura->x >= (SCREEN_WIDTH - figura->width)) {
+            figura->speedX *= -1;
+
+            // Protección para evitar problemas en paralelo
+            #pragma omp critical
+            {
+                spawnFigura(renderer);
+            }
+        }
+        if (figura->y <= 0 || figura->y >= (SCREEN_HEIGHT - figura->height)) {
+            figura->speedY *= -1;
+
+            // Protección para evitar problemas en paralelo
+            #pragma omp critical
+            {
+                spawnFigura(renderer);
+            }
+        }
     }
 }
 
@@ -383,9 +404,7 @@ int main(int argc, char *argv[]) {
         SDL_RenderClear(renderer);
 
         // Mover figuras
-        for (int i = 0; i < N; i++) {
-            moveFigura(&figuras[i], renderer);
-        }
+        updateFiguras(figuras, N, renderer);
 
         // Detectar colisiones entre las figuras
         for (int i = 0; i < N; i++) {
@@ -475,7 +494,7 @@ int main(int argc, char *argv[]) {
 
         // Dibujar explosiones
         for (int i = 0; i < E; i++) {
-            drawFigura(renderer, &explosion[i]);
+            drawFigura(renderer, &explosion[i].figura);
         }
 
         logTicks = SDL_GetTicks();  // Ticks antes del delay
