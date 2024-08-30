@@ -320,6 +320,22 @@ void updateFiguras(Figura* figuras, int N, SDL_Renderer* renderer) {
     }
 }
 
+// Función para mover una figura
+void moveFigura(Figura* figura, SDL_Renderer* renderer) {
+    figura->x += figura->speedX;
+    figura->y += figura->speedY;
+
+    // Cambiar dirección si toca los bordes de la pantalla
+    if (figura->x <= 0 || figura->x >= (SCREEN_WIDTH - figura->width)) {
+        figura->speedX *= -1;
+        spawnFigura(renderer);
+    }
+    if (figura->y <= 0 || figura->y >= (SCREEN_HEIGHT - figura->height)) {
+        figura->speedY *= -1;
+        spawnFigura(renderer);
+    }
+}
+
 
 int main(int argc, char *argv[]) {
     if (argc > 2) {
@@ -346,6 +362,8 @@ int main(int argc, char *argv[]) {
         printf("Error al abrir el archivo\n");
         return 1;
     }
+
+    fprintf(file, "%d %d %d %d\n", N, EXPLOSION_FRAMES, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     printf("Argumentos: N = %d, E = %d\n", N, EXPLOSION_FRAMES);
 
@@ -402,6 +420,11 @@ int main(int argc, char *argv[]) {
         cleanExplosions();
 
         SDL_RenderClear(renderer);
+
+//        // Mover figuras
+//        for (int i = 0; i < N; i++) {
+//            moveFigura(&figuras[i], renderer);
+//        }
 
         // Mover figuras
         updateFiguras(figuras, N, renderer);
