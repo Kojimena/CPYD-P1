@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include <SDL_image.h>
+#include <time.h>
 
 #include "figure.h"
 #include "explosion.h"
@@ -254,6 +255,7 @@ void moveFigura(Figura* figura, SDL_Renderer* renderer) {
 
 
 int main(int argc, char *argv[]) {
+    srand(time(NULL));
     if (argc > 2) {
         N = atoi(argv[1]);
         EXPLOSION_FRAMES = atoi(argv[2]);
@@ -271,6 +273,8 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s <N> <E>\n", argv[0]);
         return 1;
     }
+
+    N = 5000;
 
     FILE *file = fopen("iter.log", "w");
 
