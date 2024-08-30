@@ -243,8 +243,6 @@ SDL_Window* initializeWindow(const char* title, int width, int height) {
     return window;
 }
 
-//
-
 // Función para cerrar SDL y destruir la ventana
 void cleanup(SDL_Window* window) {
     SDL_DestroyWindow(window);
@@ -299,22 +297,6 @@ void updateFiguras(Figura* figuras, int N, SDL_Renderer* renderer) {
                 spawnFigura(renderer);
             }
         }
-    }
-}
-
-// Función para mover una figura
-void moveFigura(Figura* figura, SDL_Renderer* renderer) {
-    figura->x += figura->speedX;
-    figura->y += figura->speedY;
-
-    // Cambiar dirección si toca los bordes de la pantalla
-    if (figura->x <= 0 || figura->x >= (SCREEN_WIDTH - figura->width)) {
-        figura->speedX *= -1;
-        spawnFigura(renderer);
-    }
-    if (figura->y <= 0 || figura->y >= (SCREEN_HEIGHT - figura->height)) {
-        figura->speedY *= -1;
-        spawnFigura(renderer);
     }
 }
 
@@ -409,11 +391,7 @@ int main(int argc, char *argv[]) {
         cleanExplosions();
 
         SDL_RenderClear(renderer);
-
-//        // Mover figuras
-//        for (int i = 0; i < N; i++) {
-//            moveFigura(&figuras[i], renderer);
-//        }
+        
 
         // Mover figuras
         updateFiguras(figuras, N, renderer);
