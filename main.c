@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include <SDL_image.h>
+#include <time.h>
 
 #include "figure.h"
 #include "explosion.h"
@@ -35,19 +36,16 @@ void initFiguras(SDL_Renderer *renderer) {
     omp_init_lock(&lock);
     #pragma omp parallel
     {
-        #pragma omp for schedule(dynamic)
+        #pragma omp for schedule(static)
         for (int i = 0; i < N; i++) {
             int x, y, spd_x, spd_y;
-            omp_set_lock(&lock);
             SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
-            omp_unset_lock(&lock);
 
             char *image = "assets/dvd_logo.png";
             Figura nuevaFigura;
 
             int overlapping;
             do {
-                omp_set_lock(&lock);
 
                 // Generar posición y velocidad aleatoria
                 x = rand() % (SCREEN_WIDTH - 64);  // [0, SCREEN_WIDTH - figura_width]
@@ -62,7 +60,6 @@ void initFiguras(SDL_Renderer *renderer) {
 
                 // Verificar si se superpone con alguna figura existente
                 overlapping = 0;
-                omp_unset_lock(&lock);
                 #pragma omp critical
                 {
                     for (int j = 0; j < i; j++) {
@@ -86,32 +83,23 @@ void spawnFigura(SDL_Renderer *renderer) {
     int x, y, spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
 
-    omp_lock_t lock;
-    omp_init_lock(&lock);
-
-    #pragma omp parallel for schedule(dynamic) shared(figuras, color)
+    #pragma omp parallel for schedule(static) shared(figuras, color)
     for (int r = 255; r < 256; r += 16) {
         for (int g = 0; g < 256; g += 16) {
             for (int b = 255; b < 256; b += 16) {
 
                 for (int i = 0; i < N; i++) {
                     if (figuras[i].color.r == r){
-                        omp_set_lock(&lock);
                         color.r = rand() % 256;
-                        omp_unset_lock(&lock);
 
                     }
 
                     if (figuras[i].color.g == g){
-                        omp_set_lock(&lock);
                         color.g = rand() % 256;
-                        omp_unset_lock(&lock);
                     }
 
                     if (figuras[i].color.b == b){
-                        omp_set_lock(&lock);
                         color.b = rand() % 256;
-                        omp_unset_lock(&lock);
                     }
                 }
 
@@ -164,28 +152,22 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     omp_lock_t lock;
     omp_init_lock(&lock);
 
-    #pragma omp parallel for schedule(dynamic) shared(explosion, color)
+    #pragma omp parallel for schedule(static) shared(explosion, color)
     for (int r = 255; r < 256; r += 16) {
         for (int g = 0; g < 256; g += 16) {
             for (int b = 255; b < 256; b += 16) {
 
                 for (int i = 0; i < E; i++) {
                     if (explosion[i].figura.color.r == r) {
-                        omp_set_lock(&lock);
                         color.r = rand() % 256;
-                        omp_unset_lock(&lock);
                     }
 
                     if (explosion[i].figura.color.g == g) {
-                        omp_set_lock(&lock);
                         color.g = rand() % 256;
-                        omp_unset_lock(&lock);
                     }
 
                     if (explosion[i].figura.color.b == b) {
-                        omp_set_lock(&lock);
                         color.b = rand() % 256;
-                        omp_unset_lock(&lock);
                     }
                 }
 
@@ -208,6 +190,7 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
 
     explosion = (Explosion*)realloc(explosion, (E + 1) * sizeof(Explosion));
     explosion[E] = nuevaExplosion;
+    #pragma omp atomic
     E++;
 }
 
@@ -216,7 +199,6 @@ void cleanExplosions() {
     {
         #pragma omp for schedule(dynamic)
         for (int i = 0; i < E; i++) {
-            #pragma omp atomic
             explosion[i].frames--;
 
             if (explosion[i].frames > 0) {
@@ -338,6 +320,12 @@ void moveFigura(Figura* figura, SDL_Renderer* renderer) {
 
 
 int main(int argc, char *argv[]) {
+    omp_set_nested(1);
+    omp_set_dynamic(1);
+
+    // usar una semilla
+    srand(time(NULL));
+
     if (argc > 2) {
         N = atoi(argv[1]);
         EXPLOSION_FRAMES = atoi(argv[2]);
@@ -355,6 +343,8 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s <N> <E>\n", argv[0]);
         return 1;
     }
+
+    N = 5000;
 
     FILE *file = fopen("iter.log", "w");
 
@@ -395,7 +385,6 @@ int main(int argc, char *argv[]) {
 
     // Inicializar figuras
     initFiguras(renderer);
-    #pragma omp barrier
 
     Uint32 startTicks, endTicks, logTicks;
     float fps = 0.0f;
