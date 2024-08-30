@@ -274,6 +274,8 @@ int main(int argc, char *argv[]) {
 
     FILE *file = fopen("iter.log", "w");
 
+    fprintf(file, "%d %d %d %d\n", N, EXPLOSION_FRAMES, SCREEN_WIDTH, SCREEN_HEIGHT);
+
     if (file == NULL) {
         printf("Error al abrir el archivo\n");
         return 1;
