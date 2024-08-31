@@ -14,22 +14,35 @@
 #define FIGURE_WIDTH 32
 #define FIGURE_HEIGHT 19
 
-int N;
-Figura* figuras;
+int N;  ///< Número de figuras.
+Figura* figuras;  ///< Arreglo dinámico de figuras.
 
-int E = 0;  // Número de explosiones
-Explosion * explosion;  // Arreglo de figuras de explosiones
-int EXPLOSION_FRAMES;
+int E = 0;  ///< Número de explosiones activas.
+Explosion *explosion;  ///< Arreglo dinámico de explosiones.
+int EXPLOSION_FRAMES;  ///< Número de frames que dura una explosión.
 
-// Verificar si dos figuras se superponen
+/**
+ * @brief Verifica si dos figuras se superponen.
+ *
+ * @param a Puntero a la primera figura.
+ * @param b Puntero a la segunda figura.
+ * @return int 1 si se superponen, 0 en caso contrario.
+ */
 int isOverlapping(Figura* a, Figura* b) {
     return (a->x < b->x + b->width && a->x + a->width > b->x &&
             a->y < b->y + b->height && a->y + a->height > b->y);
 }
 
-// Inicializar figuras asegurando que no estén superpuestas
+/**
+ * @brief Inicializa las figuras, asegurándose de que no estén superpuestas.
+ *
+ * Esta función genera figuras con posiciones y velocidades aleatorias,
+ * asegurándose de que no se superpongan con las figuras previamente generadas.
+ *
+ * @param renderer El renderer de SDL utilizado para dibujar las figuras.
+ */
 void initFiguras(SDL_Renderer *renderer) {
-    figuras = (Figura*)malloc(N * sizeof(Figura)); // Asignar memoria para N figuras
+    figuras = (Figura*)malloc(N * sizeof(Figura));  // Asignar memoria para N figuras
 
     for (int i = 0; i < N; i++) {
         int x, y, spd_x, spd_y;
@@ -43,9 +56,8 @@ void initFiguras(SDL_Renderer *renderer) {
             x = rand() % (SCREEN_WIDTH - 64);  // [0, SCREEN_WIDTH - figura_width]
             y = rand() % (SCREEN_HEIGHT - 38);  // [0, SCREEN_HEIGHT - figura_height]
 
-            // [-2, 2]
-            spd_x = rand() % 5 - 2;  // spd_x = rand() % 5 - 2
-            spd_y = rand() % 5 - 2;  // spd_y = rand() % 5 - 2
+            spd_x = rand() % 5 - 2;  // [-2, 2]
+            spd_y = rand() % 5 - 2;  // [-2, 2]
 
             // Crear la nueva figura temporalmente
             nuevaFigura = createFigura(x, y, FIGURE_WIDTH, FIGURE_HEIGHT, spd_x, spd_y, image, renderer, color);
@@ -65,34 +77,34 @@ void initFiguras(SDL_Renderer *renderer) {
     }
 }
 
-// Añadir una figura a la lista de figuras
+/**
+ * @brief Añade una nueva figura a la lista de figuras.
+ *
+ * Genera una nueva figura con características aleatorias y la añade al arreglo de figuras,
+ * asegurándose de que no se superponga con las existentes.
+ *
+ * @param renderer El renderer de SDL utilizado para dibujar la figura.
+ */
 void spawnFigura(SDL_Renderer *renderer) {
     int x, y, spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
 
-
     for (int r = 255; r < 256; r += 16) {
         for (int g = 0; g < 256; g += 16) {
             for (int b = 255; b < 256; b += 16) {
-
                 for (int i = 0; i < N; i++) {
-                    if (figuras[i].color.r == r){
+                    if (figuras[i].color.r == r) {
                         color.r = rand() % 256;
                     }
-
-                    if (figuras[i].color.g == g){
+                    if (figuras[i].color.g == g) {
                         color.g = rand() % 256;
                     }
-
-                    if (figuras[i].color.b == b){
+                    if (figuras[i].color.b == b) {
                         color.b = rand() % 256;
                     }
                 }
-
             }
-
         }
-
     }
 
     char* image = "assets/dvd_logo.png";
@@ -130,7 +142,16 @@ void spawnFigura(SDL_Renderer *renderer) {
     N++;
 }
 
-// Crea una explosión en la posición (x, y), que previamente era la posición de una figura
+/**
+ * @brief Crea una explosión en la posición especificada, que previamente era la posición de una figura.
+ *
+ * Esta función genera una explosión en una ubicación específica, utilizando características visuales
+ * como el color y la textura para representar la explosión en pantalla.
+ *
+ * @param renderer El renderer de SDL utilizado para dibujar la explosión.
+ * @param x Posición en el eje X donde ocurre la explosión.
+ * @param y Posición en el eje Y donde ocurre la explosión.
+ */
 void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     int spd_x, spd_y;
     SDL_Color color = {rand() % 256, rand() % 256, rand() % 256, 255};
@@ -138,27 +159,20 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     for (int r = 255; r < 256; r += 16) {
         for (int g = 0; g < 256; g += 16) {
             for (int b = 255; b < 256; b += 16) {
-
                 for (int i = 0; i < E; i++) {
                     if (explosion[i].figura.color.r == r) {
                         color.r = rand() % 256;
                     }
-
                     if (explosion[i].figura.color.g == g) {
                         color.g = rand() % 256;
                     }
-
                     if (explosion[i].figura.color.b == b) {
                         color.b = rand() % 256;
                     }
                 }
-
             }
-
         }
-
     }
-
 
     char* image = "assets/explosion.png";
     Explosion nuevaExplosion;
@@ -167,7 +181,7 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     spd_x = 0;
     spd_y = 0;
 
-    nuevaExplosion.figura = createFigura(x, y, FIGURE_WIDTH*4, FIGURE_HEIGHT*4, spd_x, spd_y, image, renderer, color);
+    nuevaExplosion.figura = createFigura(x, y, FIGURE_WIDTH * 4, FIGURE_HEIGHT * 4, spd_x, spd_y, image, renderer, color);
     nuevaExplosion.frames = EXPLOSION_FRAMES;
 
     explosion = (Explosion*)realloc(explosion, (E + 1) * sizeof(Explosion));
@@ -175,6 +189,12 @@ void spawnExplosion(SDL_Renderer *renderer, int x, int y) {
     E++;
 }
 
+/**
+ * @brief Limpia las explosiones que han finalizado y reduce el tamaño de las restantes.
+ *
+ * Esta función reduce el tamaño de las explosiones activas en cada iteración y elimina
+ * las que ya han alcanzado su límite de frames.
+ */
 void cleanExplosions() {
     for (int i = 0; i < E; i++) {
         explosion[i].frames--;
@@ -183,15 +203,20 @@ void cleanExplosions() {
             explosion = (Explosion*)realloc(explosion, (E - 1) * sizeof(Explosion));
             E--;
         } else {
-            explosion[i].figura.width -= (FIGURE_WIDTH*4)/EXPLOSION_FRAMES;
-            explosion[i].figura.height -= (FIGURE_HEIGHT*4)/EXPLOSION_FRAMES;
+            explosion[i].figura.width -= (FIGURE_WIDTH * 4) / EXPLOSION_FRAMES;
+            explosion[i].figura.height -= (FIGURE_HEIGHT * 4) / EXPLOSION_FRAMES;
         }
-
     }
 }
 
-
-// Función para inicializar SDL y crear una ventana
+/**
+ * @brief Función para inicializar SDL y crear una ventana.
+ *
+ * @param title Título de la ventana.
+ * @param width Ancho de la ventana.
+ * @param height Alto de la ventana.
+ * @return SDL_Window* Puntero a la ventana creada. Retorna NULL si ocurre un error.
+ */
 SDL_Window* initializeWindow(const char* title, int width, int height) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -208,14 +233,22 @@ SDL_Window* initializeWindow(const char* title, int width, int height) {
     return window;
 }
 
-//
-
-// Función para cerrar SDL y destruir la ventana
+/**
+ * @brief Función para cerrar SDL y destruir la ventana.
+ *
+ * @param window Puntero a la ventana de SDL que se va a destruir.
+ */
 void cleanup(SDL_Window* window) {
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
+/**
+ * @brief Resuelve la colisión entre dos figuras invirtiendo sus velocidades y ajustando sus posiciones.
+ *
+ * @param a Puntero a la primera figura involucrada en la colisión.
+ * @param b Puntero a la segunda figura involucrada en la colisión.
+ */
 void resolveCollision(Figura* a, Figura* b) {
     // Invertir velocidades
     a->speedX *= -1;
@@ -237,7 +270,12 @@ void resolveCollision(Figura* a, Figura* b) {
     }
 }
 
-// Función para mover una figura
+/**
+ * @brief Mueve una figura y genera una nueva figura si la figura actual toca los bordes de la pantalla.
+ *
+ * @param figura Puntero a la figura que se desea mover.
+ * @param renderer Renderer de SDL utilizado para dibujar la figura.
+ */
 void moveFigura(Figura* figura, SDL_Renderer* renderer) {
     figura->x += figura->speedX;
     figura->y += figura->speedY;
@@ -253,7 +291,15 @@ void moveFigura(Figura* figura, SDL_Renderer* renderer) {
     }
 }
 
-
+/**
+ * @brief Función principal que ejecuta el salvapantallas.
+ *
+ * Este programa utiliza SDL para mostrar figuras en movimiento y gestionar colisiones.
+ *
+ * @param argc Número de argumentos de línea de comandos.
+ * @param argv Arreglo de argumentos de línea de comandos.
+ * @return int Código de salida del programa.
+ */
 int main(int argc, char *argv[]) {
     srand(time(NULL));
     if (argc > 2) {
@@ -351,7 +397,7 @@ int main(int argc, char *argv[]) {
                 if (checkCollision(&figuras[i], &figuras[j])) {
                     resolveCollision(&figuras[i], &figuras[j]);
 
-                    // decidir al azar cual de las dos figuras se elimina
+                    // decidir al azar cuál de las dos figuras se elimina
                     int randNum;
 
                     if (N <= 2) {
@@ -361,7 +407,6 @@ int main(int argc, char *argv[]) {
                     }
 
                     if (randNum == 0) {
-
                         int salvation = rand() % 3;  // 0, 1, 2
 
                         if (salvation > 1) {
@@ -379,7 +424,6 @@ int main(int argc, char *argv[]) {
                         // Crear una explosión en la posición de la figura eliminada
                         spawnExplosion(renderer, prevX, prevY);
                     } else if (randNum == 1) {
-
                         int salvation = rand() % 3;  // 0, 1, 2
 
                         if (salvation > 1) {
@@ -399,13 +443,11 @@ int main(int argc, char *argv[]) {
                     } else if (randNum == 2) {
                         continue;  // Ambas se salvan
                     } else if (randNum == 3) {
-
                         int children = rand() % 5;  // 0, 1, 2, 3, 4
 
                         for (int k = 0; k < children; k++) {
                             spawnFigura(renderer);
                         }
-
                     } else {
                         int prevX1 = figuras[i].x;
                         int prevY1 = figuras[i].y;
@@ -433,7 +475,7 @@ int main(int argc, char *argv[]) {
 
         // Dibujar explosiones
         for (int i = 0; i < E; i++) {
-            drawFigura(renderer, &explosion[i]);
+            drawFigura(renderer, &explosion[i].figura);
         }
 
         logTicks = SDL_GetTicks();  // Ticks antes del delay
@@ -445,7 +487,7 @@ int main(int argc, char *argv[]) {
         fps = 1000.0f / (endTicks - startTicks);
 
         // Guardar en el log el tiempo que tardó en ejecutarse el ciclo y los FPS
-        fprintf(file, "%d %d %.2f %d\n", logTicks-startTicks, endTicks-startTicks, fps, N);
+        fprintf(file, "%d %d %.2f %d\n", logTicks - startTicks, endTicks - startTicks, fps, N);
 
         snprintf(title, sizeof(title), "Screen Saver - FPS: %.2f", fps);
         SDL_SetWindowTitle(window, title);
@@ -455,4 +497,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
